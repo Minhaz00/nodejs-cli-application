@@ -46,7 +46,7 @@ jobs:
         run: chmod +x dist/file-organizer
       
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: file-organizer-binary
           path: dist/file-organizer

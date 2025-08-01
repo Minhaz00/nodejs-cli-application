@@ -1,22 +1,23 @@
 name: Build and Release
 
-permissions:
-  contents: write
-
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -31,10 +32,10 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -59,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Download binary artifact
         uses: actions/download-artifact@v4
@@ -67,18 +68,15 @@ jobs:
           name: file-organizer-binary
           path: dist/
       
+      - name: Make binary executable
+        run: chmod +x dist/file-organizer
+      
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+          files: dist/file-organizer
           body: |
-            ## Installation
+            ## 🚀 Installation
             
             ### Quick Install (Ubuntu/Linux)
             ```bash
@@ -86,19 +84,21 @@ jobs:
             ```
             
             ### Manual Download
-            Download the binary below and place it in your PATH.
+            1. Download the `file-organizer` binary below
+            2. Make it executable: `chmod +x file-organizer`
+            3. Move to PATH: `sudo mv file-organizer /usr/local/bin/`
             
-            ## What's Changed
+            ### Usage
+            ```bash
+            file-organizer --help
+            file-organizer interactive
+            file-organizer organize /path/to/directory --dry-run
+            ```
+            
+            ## 📋 What's Changed
             - Bug fixes and improvements
+            - Enhanced file organization capabilities
             
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v1.0.0...${{ github.ref }}
-      
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+            **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/file-organizer
-          asset_name: file-organizer
-          asset_content_type: application/octet-stream

@@ -1,28 +1,39 @@
 {
-  "name": "mycli",
+  "name": "file-organizer-cli",
   "version": "1.0.0",
-  "description": "A simple CLI application",
+  "description": "A CLI tool to organize files by extension into folders",
   "main": "index.js",
   "bin": {
-    "mycli": "./bin/mycli.js"
+    "file-organizer": "./bin/cli.js"
   },
   "scripts": {
-    "start": "node bin/mycli.js",
-    "build": "./scripts/build.sh",
-    "pack": "npm pack",
-    "install-global": "npm install -g .",
-    "uninstall-global": "npm uninstall -g mycli",
-    "test": "echo 'No tests specified' && exit 0"
+    "start": "node bin/cli.js",
+    "test": "jest",
+    "build": "pkg bin/cli.js --targets node18-linux-x64 --output dist/file-organizer"
   },
-  "keywords": ["cli", "command-line", "tool"],
-  "author": "Your Name",
+  "keywords": [
+    "cli",
+    "file",
+    "organizer",
+    "utility"
+  ],
+  "author": "Minhaz Jisun",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^4.1.2",
     "commander": "^11.0.0",
-    "chalk": "^4.1.2"
+    "inquirer": "^8.2.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "pkg": "^5.8.1"
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Minhaz00/nodejs-cli-application.git"
   },
   "preferGlobal": true
 }

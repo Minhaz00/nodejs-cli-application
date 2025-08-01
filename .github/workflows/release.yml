@@ -1,99 +1,101 @@
-name: Release
+name: Build and Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
-  release:
+  test:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        registry-url: 'https://registry.npmjs.org'
-        
-    - name: Install dependencies
-      run: npm ci
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
       
-    - name: Run tests (if any)
-      run: npm test --if-present
+      - name: Install dependencies
+        run: npm ci
       
-    - name: Create package
-      run: npm pack
-      
-    - name: Get package info
-      id: package
-      run: |
-        echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
-        echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-        
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ## Installation
-          
-          ### Quick Install (Ubuntu/Linux)
-          ```bash
-          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/install.sh | bash
-          ```
-          
-          ### Direct Install from GitHub
-          ```bash
-          npm install -g git+https://github.com/${{ github.repository }}.git
-          ```
-          
-          ### Install from Package
-          Download the `.tgz` file below and run:
-          ```bash
-          npm install -g ${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.tgz
-          ```
-          
-          ## Usage
-          ```bash
-          mycli --help
-          mycli hello --name "World"
-          mycli list
-          mycli info
-          mycli create test.txt --content "Hello World"
-          ```
-          
-        draft: false
-        prerelease: false
-        
-    - name: Upload Package Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.tgz
-        asset_name: ${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.tgz
-        asset_content_type: application/gzip
+      - name: Run tests
+        run: npm test
 
-  # Optional: Publish to NPM registry
-  # publish-npm:
-  #   needs: release
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version: '18'
-  #       registry-url: 'https://registry.npmjs.org'
-  #   - run: npm ci
-  #   - run: npm publish
-  #     env:
-  #       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build binary
+        run: npm run build
+      
+      - name: Make binary executable
+        run: chmod +x dist/file-organizer
+      
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: file-organizer-binary
+          path: dist/file-organizer
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download binary artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: file-organizer-binary
+          path: dist/
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Installation
+            
+            ### Quick Install (Ubuntu/Linux)
+            ```bash
+            wget -O file-organizer https://github.com/${{ github.repository }}/releases/latest/download/file-organizer && chmod +x file-organizer && sudo mv file-organizer /usr/local/bin/
+            ```
+            
+            ### Manual Download
+            Download the binary below and place it in your PATH.
+            
+            ## What's Changed
+            - Bug fixes and improvements
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v1.0.0...${{ github.ref }}
+      
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/file-organizer
+          asset_name: file-organizer
+          asset_content_type: application/octet-stream

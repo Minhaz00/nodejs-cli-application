@@ -1,0 +1,28 @@
+{
+  "name": "mycli",
+  "version": "1.0.0",
+  "description": "A simple CLI application",
+  "main": "index.js",
+  "bin": {
+    "mycli": "./bin/mycli.js"
+  },
+  "scripts": {
+    "start": "node bin/mycli.js",
+    "build": "./scripts/build.sh",
+    "pack": "npm pack",
+    "install-global": "npm install -g .",
+    "uninstall-global": "npm uninstall -g mycli",
+    "test": "echo 'No tests specified' && exit 0"
+  },
+  "keywords": ["cli", "command-line", "tool"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "chalk": "^4.1.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "preferGlobal": true
+}
